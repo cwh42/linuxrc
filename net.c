@@ -500,6 +500,11 @@ int net_activate4()
     memset (&interface_ri, 0, sizeof (struct ifreq));
     strcpy (interface_ri.ifr_name, config.net.device);
 
+    if(config.net.vlanid && strcmp(config.net.vlanid, "0")) {
+        strcat(interface_ri.ifr_name, ".");
+        strcat(interface_ri.ifr_name, config.net.vlanid);
+    }
+
     sockaddr_ri.sin_family = AF_INET;
     sockaddr_ri.sin_port = 0;
     sockaddr_ri.sin_addr = config.net.hostname.ip;
@@ -1730,6 +1735,10 @@ int net_dhcp4()
 
   sprintf(cmd + strlen(cmd), " %s", config.net.device);
 
+  if(config.net.vlanid && strcmp(config.net.vlanid, "0")) {
+      sprintf(cmd + strlen(cmd), ".%s", config.net.vlanid);
+  }
+
   sprintf(file, "/var/lib/dhcpcd/dhcpcd-%s.info", config.net.device);
 
   unlink(file);
@@ -1847,6 +1856,7 @@ int net_dhcp6()
   int ok = 0;
   unsigned timeout = config.net.dhcp_timeout;
   char buf[256];
+  char device[40];
 
   if(config.net.dhcp_active || config.net.keep) return 0;
 
@@ -1875,7 +1885,13 @@ int net_dhcp6()
 
   unlink("/tmp/dhcp6c_update.done");
 
-  strprintf(&cmd, "dhcp6c %s", config.net.device);
+  strcpy( device, config.net.device );
+
+  if(config.net.vlanid && strcmp(config.net.vlanid, "0")) {
+      sprintf(device + strlen(device), ".%s", config.net.vlanid);
+  }
+
+  strprintf(&cmd, "dhcp6c %s", device);
 
   system(cmd);
 
